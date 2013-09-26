@@ -1,0 +1,108 @@
+#!/bin/bash
+# create-vm
+# Paul Stivers
+# last updated: 2013-09-25
+
+usage="usage: $0 <vm number> <user name> <login passwd> <config file name> " 
+example="example: $0 1 paul paul ubuntu.conf" 
+
+vm_num=$1
+help_state=$1
+user=$2
+password=$3
+config_file=$4
+
+config_path=~/admin/kvm/config
+
+if [ "$help_state" = help ]; then
+    echo 
+    echo "$usage"
+    echo "$example"
+    echo
+    exit 0
+fi
+
+# if user or password are null, notify the user and exit
+if [ "$user" = "" ] || [ "$password" = "" ]; then
+    echo
+    echo "the user name \"$user\" or the login password \"$password\" is empty"
+    echo "$usage"
+    echo "$example"
+    echo 
+    exit 1
+fi
+
+# if config file not found, notify the user and exit
+if [ ! -f "${config_path}/$config_file" ]; then
+    echo
+    echo "The config file \"$config_file\" was not found in $config_directory"
+    echo "$usage"
+    echo "$example"
+    echo
+    exit 1
+fi
+
+source ${config_path}/$config_file
+
+# convert string to int with let command
+let vm_int=$vm_num
+
+# if vm number outside the range of 1-99, notify the user and exit
+if [ $((vm_int)) -lt 1 ] || [ $((vm_int)) -gt 99 ]; then
+    echo
+    echo "vm number must be between 1 and 99"
+    echo "$usage"
+    echo "$example"
+    echo 
+    exit 1
+fi
+
+# ensure vm number stings less than 10 have a leading zero for append to hostname
+if [ $((vm_int)) -lt 10 ]; then
+    vm_num="0$vm_int"
+fi
+
+vm_hostname=${VM_HOSTNAME_ROOT}$vm_num
+
+# calculate IP address for the VM
+address_first_24=${VM_STARTING_ADDRESS%.*}
+starting_address_last_8=${VM_STARTING_ADDRESS#*.*.*.}
+address_last_8=$(( $starting_address_last_8 + $vm_int - 1 ))
+ip_address=${address_first_24}.$address_last_8
+echo "ip=$ip_address"
+
+# create the directory for the vm
+sudo mkdir /var/lib/libvirt/images/$vm_hostname
+
+# copy template files for the vm
+# default templates are in /etc/vmbuilder/libvirt/
+# make a directory for templates in the vm path
+sudo mkdir -p /var/lib/libvirt/images/$vm_hostname/mytemplates/libvirt 
+# copy the default templates to the vm templates directory
+sudo cp /etc/vmbuilder/libvirt/* /var/lib/libvirt/images/$vm_hostname/mytemplates/libvirt/ 
+
+# create a partition file for vm1
+partition_file="/var/lib/libvirt/images/$vm_hostname/vmbuilder.partition"
+sudo /bin/bash -c "echo root $VM_DISK_ROOT > $partition_file"
+sudo /bin/bash -c "echo swap $VM_DISK_SWAP >> $partition_file"
+sudo /bin/bash -c "echo '---' >> $partition_file"
+sudo /bin/bash -c "echo /var $VM_DISK_VAR >> $partition_file"
+	
+# create a boot file from which openssh-server will be installed
+boot_file="/var/lib/libvirt/images/$vm_hostname/boot.sh"
+sudo /bin/bash -c "echo '# This script will run the first time the virtual machine boots' > $boot_file"
+sudo /bin/bash -c "echo '# It is ran as root.' >> $boot_file"
+sudo /bin/bash -c "echo '' >> $boot_file"
+sudo /bin/bash -c "echo '# Expire the user account' >> $boot_file"
+sudo /bin/bash -c "echo 'passwd -e $password' >> $boot_file"
+sudo /bin/bash -c "echo '' >> $boot_file"
+sudo /bin/bash -c "echo '# Install openssh-server' >> $boot_file"
+sudo /bin/bash -c "echo 'apt-get update' >> $boot_file"
+sudo /bin/bash -c "echo 'apt-get install -qqy --force-yes openssh-server' >> $boot_file"
+
+# build the vm
+cd /var/lib/libvirt/images/$vm_hostname/ 
+sudo /bin/bash -c "vmbuilder kvm $VM_OS --suite=$VM_VERSION --flavour=virtual --arch=$VM_ARCH --libvirt=qemu:///system --ip=$ip_address --gw=$VM_GATEWAY --part=vmbuilder.partition --templates=mytemplates --user=$user --name=$user --pass=$password --addpkg=vim-nox --addpkg=unattended-upgrades --addpkg=acpid --firstboot=/var/lib/libvirt/images/${vm_hostname}/boot.sh --mem=256 --hostname=$vm_hostname --bridge=$VM_BRIDGE"
+
+exit 0
+
