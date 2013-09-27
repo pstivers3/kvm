@@ -1,0 +1,32 @@
+Manage the KVM virtual machines with virsh
+last update: 2013-09-26
+Paul Stivers
+
+A short list of important commands
+
+	virsh --connect qemu:///system  # connect to the virtual shell
+	
+		help # lists the options for virsh
+		
+		list --all # show all VMs, running and inactive
+		
+		list # show all running VMs
+		
+		start vm1 
+		
+		shutdown vm1 # graceful shutdown
+		
+		destroy vm1 # Immediately stop. Like pulling the power plug
+		
+		undefine vm1 # completely remove the VM.
+		
+		suspend vm1
+		
+		resume vm1
+		
+		quit # to exit virsh
+		
+--
+end
+	
+

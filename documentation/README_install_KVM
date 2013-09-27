@@ -1,0 +1,111 @@
+Install kvm on Ubuntu 12.04 enterprise edition
+
+Last update: Feb, 2013
+Paul Stivers
+
+ref: http://www.howtoforge.com/virtualization-with-kvm-on-ubuntu-11.10
+ref: http://manpages.ubuntu.com/manpages/precise/man1/vmbuilder.1.html
+
+# switch user to root
+
+	sudo su 
+
+# ensure the cpu supports virtualization 
+
+	# should return lines containing 'vmx' or 'svm'. Returned 'vmx' for ubuntu 11.10
+	egrep '(vmx|svm)' --color=always /proc/cpuinfo  
+
+# Install kvm and vmbuilder
+
+	apt-get install qemu-kvm libvirt-bin ubuntu-vm-builder bridge-utils
+	
+	adduser `id -un` libvirtd # add user root to group libvirtd
+
+	# --> relog to start kvm
+	
+	virsh -c qemu:///system list # verify kvm has started
+	
+	# should return
+	 Id Name                 State
+	----------------------------------
+
+# Fix the following bug, if it has not already been fixed.
+# --> fix:
+
+	ref: https://bugs.launchpad.net/ubuntu/+source/vm-builder/+bug/879710 
+	
+	# add the sleep statement to dapper.py
+	sudo vi /usr/lib/python2.7/dist-packages/VMBuilder/plugins/ubuntu/dapper.py
+	
+	--- snip ---
+	def unmount_dev(self):
+	    self.context.cancel_cleanup(self.unmount_dev)
+	    run_cmd('sleep', '10')
+	    run_cmd('umount', '%s/dev' % self.context.chroot_dir)
+	--- snip ---
+
+# setup network bridge on the host
+
+	apt-get install bridge-utils # install bridge utilities. May already be installed.
+	
+	# configure network interface
+	
+	cd /etc/network
+	cp interfaces interfaces.bak
+	
+	# network for bridging with dhcp
+	
+	cat /etc/network/interfaces
+		
+		--- snip ---
+		# The loopback network interface
+		auto lo
+		iface lo inet loopback
+		
+		# The primary network interface with bridging to kvm
+		auto eth0
+		iface eth0 inet manual
+		
+		auto br0
+		iface br0 inet dhcp
+		        bridge_ports eth0
+		        bridge_stp off
+		        bridge_fd 0
+		        bridge_maxwait 0
+		--- snip ---
+	
+	# This bridge with static IP allows ssh to other servers behind the router, but did not allow sudo apt-get update on the host. Not allowing access outside the local network.
+	
+	$ cat /etc/network/interfaces
+	
+	--- snip ---
+	# The loopback interface
+	auto lo
+	iface lo inet loopback
+	
+	# The primary network interface with bridging to kvm
+	auto eth0
+	iface eth0 inet manual
+	
+	auto br0 
+	iface br0 inet static 
+	        address 192.168.1.9
+	        netmask 255.255.255.0
+	        network 192.168.1.0
+	        broadcast 192.168.1.255
+	        gateway 192.168.1.1
+	        bridge_ports eth0
+	        bridge_stp off
+	        bridge_fd 0
+	        bridge_maxwait 0
+	--- snip ---
+	
+# restart the network
+
+	sudo /etc/init.d/networking restart
+	
+	ifconfig # to see the new settings. You should now see br0.
+	
+--
+end
+

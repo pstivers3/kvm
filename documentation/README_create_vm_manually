@@ -1,0 +1,91 @@
+Manual process for creating an image-based VM with KVM and vmbuilder.
+Last updated: 2013-09-26
+Paul Stivers
+
+Host OS is Ubuntu 12.04 server edition.
+Guest OS in the example is Ubuntu 12.04 server edition.
+
+sudo su # switch user to root
+
+# create a directory for vm1
+
+	cd /var/lib/libvirt/images/
+	mkdir vm1 # make a directory for the first vm
+
+# copy template files for vm1
+
+	# default templates are in /etc/vmbuilder/libvirt/
+	
+	mkdir -p /var/lib/libvirt/images/vm1/mytemplates/libvirt # make a directory for templates in the vm1 path.
+	cp /etc/vmbuilder/libvirt/* /var/lib/libvirt/images/vm1/mytemplates/libvirt/ # copy the default templates to the vm1 templates directory.
+	
+# create a partition file for vm1
+
+	vi /var/lib/libvirt/images/vm1/vmbuilder.partition  # create the partition file
+	
+	--- snip ---
+	root 8000
+	swap 4000
+	---
+	/var 20000
+	--- snip ---
+	
+	# This defines a root partition (/) with a size of 8000MB, a swap partition of 4000MB, and a /var partition of 20000MB. The --- line makes that the following partition (/var in this example) is on a separate disk image (i.e., this would create two disk images, one for root and swap and one for /var). Of course, you are free to define whatever partitions you like (as long as you also define root and swap), and of course, they can be in just one disk image - this is just an example.
+	
+# create a boot file from which openssh-server will be installed
+
+	vi /var/lib/libvirt/images/vm1/boot.sh
+	
+	--- snip ---
+	# This script will run the first time the virtual machine boots
+	# It is ran as root.
+	
+	# Expire the user account
+	passwd -e paul
+	
+	# Install openssh-server
+	apt-get update
+	apt-get install -qqy --force-yes openssh-server
+	--- snip ---
+	
+# build a vm, in this example, vm1
+
+	vmbuilder -h # view options for vmbuilder
+	vmbuilder kvm ubuntu -h # view options for building an ubuntu kvm
+	
+	cd /var/lib/libvirt/images/vm1/ # some options, such as --part specifies the file location relative to the working directory.
+	
+	# create vm1
+	vmbuilder kvm ubuntu --suite=precise --flavour=virtual --arch=amd64 --libvirt=qemu:///system --ip=192.168.1.101 --gw=192.168.1.1 --part=vmbuilder.partition --templates=mytemplates --user=paul --name=paul --pass=paul --addpkg=vim-nox --addpkg=unattended-upgrades --addpkg=acpid --firstboot=/var/lib/libvirt/images/vm1/boot.sh --mem=256 --hostname=vm1 --bridge=br0 
+
+# inspect the xml definition for the VM (if desired)
+
+	cd /etc/libvirt/qemu/
+	sudo cat vm1.xml
+	
+# View the vm image filenames. There should be two.
+# Can not inspect the files with cat. The files are binary.
+
+	cd /var/lib/libvirt/images/vm1/ubuntu-kvm
+	ls
+	
+# remove a vm
+
+	# destroy vm1 if it is running. 
+	echo "destroy vm1" | virsh
+
+	# undefine the vm1. This step is critical.
+	# otherwise you will get a "vm already exists" error if you try to create a new vm with the same hostname 
+	echo "undefine $vm_hostname" | virsh
+
+	# This step is housekeeping.
+	# The XML will be overwritten if a new vm is created with the same hostname
+	sudo rm /etc/libvirt/qemu/vm1.xml
+
+    # remove the images directory for vm1
+	# this step is critical
+	# otherwise you will get a "vm already exists" error if you try to create a new vm with the same hostname
+	sudo rm -r /var/lib/libvirt/images/vm1
+
+--
+end
