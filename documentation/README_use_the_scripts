@@ -19,20 +19,20 @@ Paul Stivers
 
 ### Setup
 
-# create directories in the host OS
-
+	# create directories in the host OS
+	
 	mkdir -p ~/admin/kvm/config
 	
-# --> move the two scripts, create-vm and remove-vm to ~/admin/kvm
+	# --> move the two scripts, create-vm and remove-vm to ~/admin/kvm
 
-# --> move the ubuntu.config file to ~/admin/kvm/config
+	# --> move the ubuntu.config file to ~/admin/kvm/config
 
-	# otherwise change this line as appropriate in create-vm
+		# otherwise change this line as appropriate in create-vm
 	
 		config_path=~/admin/kvm/config
 	
-	# edit the right side of the assignments in the config file to suit your needs. 
-	# make additional config files as necessary
+	# edit the right side of the assignment statements in the config file to suit your needs 
+	# make additional config files as necessary to create VMs with other parameter sets
 	# the config filename is one of the command line arguments to create-vm
 	
 # chmod the scripts for execution
@@ -42,7 +42,7 @@ Paul Stivers
 
 ### Running the scripts
 
-# run the scrips with 'help' to see the command line arguments and an example
+	# run the scrips with 'help' to see the command line arguments and an example
 
 	cd ~/admin/kvm
 	./create-vm help
@@ -65,7 +65,8 @@ Paul Stivers
 	
 # remove-vm
 
-	A vm must be "scrubbed" before it can be re-created with the same hostname, or you will get an "vm already exists" or similar error. Certain virsh commands must be run, and files and directories removed. This is outlined in README_create_vm_manually, and automated in remove-vm
+	Certain files and data must be removed before it can be re-created with the same hostname, or you will get an "vm already exists" or similar error. 
+	Certain virsh commands must be run, and files and directories removed. This is outlined in README_create_vm_manually, and automated in remove-vm
 	
 	remove-vm is useful if a vm becomes corrupted, or if you want to create a new vm with the same hostname but new parameters such as disk size.
 	
