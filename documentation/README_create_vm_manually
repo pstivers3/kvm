@@ -5,7 +5,9 @@ Paul Stivers
 Host OS is Ubuntu 12.04 server edition.
 Guest OS in the example is Ubuntu 12.04 server edition.
 
-sudo su # switch user to root
+# switch user to root
+
+	sudo su
 
 # create a directory for vm1
 
