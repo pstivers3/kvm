@@ -74,7 +74,8 @@ sudo su # switch user to root
 	# destroy vm1 if it is running. 
 	echo "destroy vm1" | virsh
 
-	# undefine the vm1. This step is critical.
+	# undefine the vm1. 
+	# this step is critical.
 	# otherwise you will get a "vm already exists" error if you try to create a new vm with the same hostname 
 	echo "undefine $vm_hostname" | virsh
 
@@ -82,7 +83,7 @@ sudo su # switch user to root
 	# The XML will be overwritten if a new vm is created with the same hostname
 	sudo rm /etc/libvirt/qemu/vm1.xml
 
-    # remove the images directory for vm1
+	# remove the images directory for vm1
 	# this step is critical
 	# otherwise you will get a "vm already exists" error if you try to create a new vm with the same hostname
 	sudo rm -r /var/lib/libvirt/images/vm1
