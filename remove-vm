@@ -36,9 +36,11 @@ echo
 echo "*** virsh undefining $vm_hostname if it exists"
 echo "undefine $vm_hostname" | virsh
 echo
-echo "removing file /etc/libvirt/qemu/$vm_hostname"
-if [ -d /etc/libvirt/qemu/$vm_hostname ]; then
-    sudo rm /etc/libvirt/qemu/$vm_hostname
+# This one isn't critical. Just housekeeping.
+# The XML will be overwritten if a new vm is created with the same hostname
+echo "removing file /etc/libvirt/qemu/${vm_hostname}.xml"
+if [ -d /etc/libvirt/qemu/${vm_hostname}.xml ]; then
+    sudo rm /etc/libvirt/qemu/${vm_hostname}
 fi
 echo "removing directory /var/lib/libvirt/images/$vm_hostname"
 if [ -d /var/lib/libvirt/images/$vm_hostname ]; then
