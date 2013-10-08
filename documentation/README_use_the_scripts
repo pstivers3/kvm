@@ -32,6 +32,7 @@ Paul Stivers
 		config_path=~/admin/kvm/config
 	
 	# edit the right side of the assignment statements in the config file to suit your needs 
+	# the IP addresses must be ipv4. The create-vm script does not yet handle ipv6
 	# make additional config files as necessary to create VMs with other parameter sets
 	# the config filename is one of the command line arguments to create-vm
 	
